@@ -4,54 +4,33 @@ import (
 	"log"
 
 	dbTypes "github.com/Blitz-Cloud/smsServer/db"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/Blitz-Cloud/smsServer/routes"
+	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func main() {
-	// app := fiber.New()
-	db, err := gorm.Open(sqlite.Open("test.db"),&gorm.Config{})
-	db.AutoMigrate(&dbTypes.User{},&dbTypes.Message{},&dbTypes.Node{})
-	if err!=nil{
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Env file not loaded or missing\n Server startup aborted\nExit 1")
+	}	
+
+
+	app := fiber.New()
+	db, err := gorm.Open(sqlite.Open("main.db"), &gorm.Config{})
+	db.AutoMigrate(&dbTypes.User{}, &dbTypes.Node{})
+	if err != nil {
 		log.Fatal(err)
 	}
-	
-	// newUser:= dbTypes.User{
-	// 	Name: "Ionut",
-	// 	Email: "ionut@blitzcloud.me",
-	// 	Password: "test",
-	// }
+	app.Use(func(c *fiber.Ctx)error{
+		c.Locals("db",db)
+		return c.Next()
+	})
 
-	// newNode := dbTypes.Node{
-	// 	UserId: 1,
-	// 	Name: "rico",
-	// 	MacAddress: "AAAA:BBBB:CCCC:DDDD",
-	// }
-
-	// db.Create(&newUser)
-	// // spew.Dump(result)
-	// db.Create(&newNode)
-	
-
-	foundUser := dbTypes.User{}
-	db.Preload("Nodes").First(&foundUser, 1)
-	// db.First(&foundUser,1)
-	spew.Dump(&foundUser)
+	routes.RegisterApiRoutes(app)
 
 
-
-
-
-	
-
-	// db.Create(&newUser)
-
-
-	// app.Get("/", func(c *fiber.Ctx) error {
-
-	// 	return c.SendString("Hello, World!")
-	// })
-
-	// app.Listen(":3000")
+	app.Listen(":3000")
 }
